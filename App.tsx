@@ -406,52 +406,6 @@ const RPMDocument = ({ entry, themeIndex, id }: { entry: LibraryEntry, themeInde
           </table>
         </div>
       </div>
-
-      {/* PAGE N+2: LAMPIRAN */}
-      <div className="f4-page leading-none">
-        <div className="border-[1.5pt] border-black text-center font-bold uppercase p-3 mb-8" style={{ backgroundColor: docTheme.header }}>LAMPIRAN: INSTRUMEN PENILAIAN (SOAL HOTS & KUNCI JAWABAN)</div>
-        
-        <table className="table-spreadsheet">
-          <thead>
-            <tr style={{ backgroundColor: docTheme.header }}>
-              <th className="text-center" style={{ width: '50px' }}>No</th>
-              <th className="text-center">Butir Soal (HOTS) & Pilihan Jawaban</th>
-              <th className="text-center" style={{ width: '80px' }}>Kunci</th>
-            </tr>
-          </thead>
-          <tbody>
-            {generatedContent.formativeQuestions.map((q, qIdx) => (
-              <tr key={qIdx}>
-                <td className="text-center font-bold">{qIdx + 1}</td>
-                <td className="p-4">
-                  <p className="font-bold mb-3 text-justify">{q.question}</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                    {(['a', 'b', 'c', 'd'] as const).map((opt) => (
-                      <div key={opt} className="flex items-start gap-2">
-                        <span className="font-bold uppercase shrink-0">{opt}.</span>
-                        <span>{q.options[opt]}</span>
-                      </div>
-                    ))}
-                  </div>
-                </td>
-                <td className="text-center align-middle">
-                  <div className="w-10 h-10 rounded-full border-2 border-black flex items-center justify-center font-black mx-auto bg-slate-50">
-                    {q.answer.toUpperCase()}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="mt-12 pt-8 border-t-2 border-dashed border-slate-200 text-center">
-          <div className="inline-flex items-center gap-3 px-6 py-2 bg-slate-100 rounded-full mb-4">
-             <School size={14} className="text-slate-400" />
-             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">SDN 14 Lubuak Tarok • Sijunjung</span>
-          </div>
-          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em]">Dokumen ini dihasilkan secara otomatis oleh Sistem Kecerdasan Buatan RPM 2026</p>
-        </div>
-      </div>
     </div>
   );
 };
@@ -483,6 +437,7 @@ export default function App() {
   const [activeSection, setActiveSection] = useState<string>("topik");
   const [selectedLibraryIds, setSelectedLibraryIds] = useState<string[]>([]);
   const [selectedThemeIndex, setSelectedThemeIndex] = useState<number | null>(null);
+  const [showQuestionEditor, setShowQuestionEditor] = useState(false);
 
   // Load form data draft
   useEffect(() => {
@@ -794,6 +749,32 @@ export default function App() {
     if (confirm("Reset data form?")) {
       localStorage.removeItem('rpm_form_data');
       setState(prev => ({ ...prev, formData: INITIAL_FORM, generatedContent: null, generatedImageUrl: null }));
+    }
+  };
+
+  const handleUpdateQuestion = (index: number, field: keyof FormativeQuestion | 'options', value: any, optionKey?: 'a' | 'b' | 'c' | 'd') => {
+    if (!questionsData) return;
+    const newQuestions = [...questionsData];
+    if (field === 'options' && optionKey) {
+      newQuestions[index].options = { ...newQuestions[index].options, [optionKey]: value };
+    } else {
+      (newQuestions[index] as any)[field] = value;
+    }
+    setQuestionsData(newQuestions);
+  };
+
+  const handleAddQuestion = () => {
+    const newQuestion: FormativeQuestion = {
+      question: "Tulis pertanyaan HOTS di sini...",
+      options: { a: "Pilihan A", b: "Pilihan B", c: "Pilihan C", d: "Pilihan D" },
+      answer: "a"
+    };
+    setQuestionsData(prev => prev ? [...prev, newQuestion] : [newQuestion]);
+  };
+
+  const handleDeleteQuestion = (index: number) => {
+    if (confirm("Hapus soal ini?")) {
+      setQuestionsData(prev => prev ? prev.filter((_, i) => i !== index) : null);
     }
   };
 
@@ -1629,12 +1610,40 @@ export default function App() {
               </div>
 
               <div className="pt-4 space-y-3">
-                <button type="submit" disabled={state.isGenerating || !state.formData.material} className="w-full py-6 bg-indigo-700 text-white rounded-[2rem] font-black text-lg shadow-2xl hover:bg-indigo-800 disabled:bg-slate-300 transition-all active:scale-[0.98]">
-                  {state.isGenerating ? <Loader2 className="animate-spin mx-auto" size={28} /> : "HASILKAN RPM LENGKAP"}
-                </button>
-                <button type="button" onClick={handleGenQuestions} disabled={state.isGenerating || isGeneratingExtra || !state.formData.material} className="w-full py-4 bg-teal-600 text-white rounded-[1.5rem] font-black text-xs shadow-xl hover:bg-teal-700 disabled:bg-slate-300 transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
-                  {isGeneratingExtra ? <Loader2 className="animate-spin" size={18} /> : <><FileQuestion size={18}/> BUAT BANK SOAL (25 HOTS)</>}
-                </button>
+                <motion.button 
+                  type="submit" 
+                  disabled={state.isGenerating || !state.formData.material} 
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-full py-6 bg-indigo-700 text-white rounded-[2rem] font-black text-lg shadow-2xl hover:bg-indigo-800 disabled:bg-slate-300 transition-all relative overflow-hidden group"
+                >
+                  <span className="relative z-10">{state.isGenerating ? <Loader2 className="animate-spin mx-auto" size={28} /> : "HASILKAN RPM LENGKAP"}</span>
+                  <motion.div 
+                    className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                    initial={false}
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                  />
+                </motion.button>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    type="button" 
+                    onClick={handleGenQuestions} 
+                    disabled={state.isGenerating || isGeneratingExtra || !state.formData.material} 
+                    className="py-4 bg-teal-600 text-white rounded-[1.5rem] font-black text-[10px] shadow-xl hover:bg-teal-700 disabled:bg-slate-300 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                  >
+                    {isGeneratingExtra ? <Loader2 className="animate-spin" size={18} /> : <><FileQuestion size={18}/> GENERATE SOAL</>}
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowQuestionEditor(true)}
+                    disabled={state.isGenerating || isGeneratingExtra}
+                    className="py-4 bg-slate-800 text-white rounded-[1.5rem] font-black text-[10px] shadow-xl hover:bg-slate-900 disabled:bg-slate-300 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                  >
+                    <PenTool size={18}/> KUSTOMISASI SOAL
+                  </button>
+                </div>
               </div>
             </form>
           </motion.div>
@@ -1728,6 +1737,115 @@ export default function App() {
            </div>
          ))}
       </div>
+
+      {/* QUESTION EDITOR MODAL */}
+      <AnimatePresence>
+        {showQuestionEditor && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] flex items-center justify-center bg-indigo-950/90 backdrop-blur-xl p-4 no-print"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white w-full max-w-5xl h-[90vh] rounded-[3rem] overflow-hidden flex flex-col shadow-2xl"
+            >
+              <div className="bg-slate-900 p-8 flex justify-between items-center text-white shrink-0">
+                <div className="flex items-center gap-4">
+                  <div className="bg-indigo-500 p-3 rounded-2xl">
+                    <PenTool size={28} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Kustomisasi Soal HOTS</h3>
+                    <p className="text-slate-400 text-xs">Edit, Tambah, atau Hapus Soal secara Manual</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={handleAddQuestion}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-black text-xs flex items-center gap-2 transition-colors"
+                  >
+                    <Plus size={16} /> TAMBAH SOAL
+                  </button>
+                  <button 
+                    onClick={() => setShowQuestionEditor(false)}
+                    className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-2xl font-black text-xs transition-colors"
+                  >
+                    SELESAI
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 bg-slate-50 custom-scrollbar">
+                {questionsData && questionsData.length > 0 ? (
+                  <div className="space-y-6">
+                    {questionsData.map((q, idx) => (
+                      <div key={idx} className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm relative group">
+                        <button 
+                          onClick={() => handleDeleteQuestion(idx)}
+                          className="absolute top-6 right-6 p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                        
+                        <div className="flex gap-6">
+                          <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-400 shrink-0">
+                            {idx + 1}
+                          </div>
+                          <div className="flex-1 space-y-6">
+                            <div>
+                              <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Pertanyaan</label>
+                              <textarea 
+                                value={q.question}
+                                onChange={(e) => handleUpdateQuestion(idx, 'question', e.target.value)}
+                                className="w-full p-4 border-2 border-slate-100 rounded-2xl text-sm font-bold bg-slate-50 focus:border-indigo-500 outline-none min-h-[100px]"
+                              />
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {(['a', 'b', 'c', 'd'] as const).map((opt) => (
+                                <div key={opt}>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block flex items-center gap-2">
+                                    Opsi {opt.toUpperCase()}
+                                    {q.answer === opt && <span className="text-emerald-500 font-black text-[8px] bg-emerald-50 px-2 py-0.5 rounded-full">KUNCI JAWABAN</span>}
+                                  </label>
+                                  <div className="flex gap-2">
+                                    <input 
+                                      type="text"
+                                      value={q.options[opt]}
+                                      onChange={(e) => handleUpdateQuestion(idx, 'options', e.target.value, opt)}
+                                      className="flex-1 p-3 border-2 border-slate-100 rounded-xl text-xs bg-slate-50 focus:border-indigo-500 outline-none"
+                                    />
+                                    <button 
+                                      onClick={() => handleUpdateQuestion(idx, 'answer', opt)}
+                                      className={`px-4 rounded-xl font-black text-[10px] transition-all ${q.answer === opt ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                                    >
+                                      SET KUNCI
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
+                    <FileQuestion size={80} className="text-slate-300 mb-6" />
+                    <h4 className="text-xl font-black text-slate-400 uppercase">Belum Ada Soal</h4>
+                    <p className="text-slate-400 text-sm max-w-xs mx-auto mt-2">Gunakan tombol Generate atau Tambah Soal secara manual untuk memulai.</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {(state.isGenerating || isGeneratingExtra) && (
         <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-indigo-950/90 backdrop-blur-xl text-white p-10">
