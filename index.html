@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator RPM - SDN 14 Lubuak Tarok</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .animate-marquee {
+            display: inline-block;
+            white-space: nowrap;
+            animation: marquee 20s linear infinite;
+        }
+        .marquee-container {
+            overflow: hidden;
+            width: 100%;
+        }
+
+        /* Base styles for the F4 Document (215mm x 330mm) */
+        .f4-preview-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            background: #cbd5e1;
+            padding: 20px;
+            border-radius: 2rem;
+            display: flex;
+            justify-content: flex-start;
+            scrollbar-width: thin;
+            scrollbar-color: #94a3b8 transparent;
+        }
+        
+        @media (min-width: 1024px) {
+            .f4-preview-wrapper {
+                justify-content: center;
+                padding: 40px 20px;
+            }
+        }
+
+        .f4-page-container {
+            width: 215mm;
+            flex-shrink: 0;
+            background: white;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+            margin: 0 auto;
+        }
+
+        .f4-page {
+            width: 215mm;
+            min-height: 330mm;
+            padding: 20mm;
+            background: white;
+            font-family: 'Arial Narrow', Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.0;
+            box-sizing: border-box;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        @media screen {
+            .f4-page {
+                margin-top: 20px;
+                margin-bottom: 20px;
+                box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            }
+        }
+
+        @media print {
+            .f4-page {
+                margin: 0;
+                box-shadow: none;
+                page-break-after: always;
+            }
+        }
+
+        .f4-page * {
+            box-sizing: border-box;
+        }
+
+        /* Optimized Table Styles */
+        .table-spreadsheet {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            table-layout: auto !important;
+            border: 1.5pt solid black !important;
+            margin-bottom: 12pt;
+            word-break: normal;
+            page-break-inside: avoid;
+        }
+
+        .table-spreadsheet td, .table-spreadsheet th {
+            border: 1pt solid black !important;
+            padding: 8pt 10pt !important;
+            vertical-align: top !important;
+            text-align: left;
+            overflow-wrap: break-word !important;
+            word-wrap: break-word !important;
+            hyphens: auto;
+            font-size: 10pt !important;
+            line-height: 1.0 !important;
+        }
+
+        .table-signatures {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            border: none !important;
+            margin-top: 40pt;
+        }
+
+        .table-signatures td {
+            border: none !important;
+            width: 50%;
+            text-align: center;
+            vertical-align: top;
+            padding: 0 !important;
+        }
+
+        .table-answer-key {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            border: 1pt solid black !important;
+            margin-top: 10pt;
+        }
+        .table-answer-key td {
+            border: 1pt solid black !important;
+            padding: 4pt !important;
+            text-align: center !important;
+            font-weight: bold !important;
+            width: 20%;
+        }
+
+        .col-key {
+            width: 45mm !important; /* Adjusted for better balance */
+            min-width: 35mm;
+            font-weight: bold;
+            background-color: #f8fafc !important;
+        }
+
+        .table-header-pink {
+            background-color: #fce4ec !important;
+            font-weight: bold;
+            text-align: center !important;
+            text-transform: uppercase;
+            padding: 12pt !important;
+            font-size: 10pt !important;
+            border: 1.5pt solid black !important;
+        }
+
+        .bg-gray-100 { background-color: #f1f5f9 !important; }
+        .bg-gray-200 { background-color: #e2e8f0 !important; }
+
+        .whitespace-pre-line {
+            white-space: pre-line;
+            display: block;
+        }
+
+        .page-break { 
+            page-break-before: always !important;
+            break-before: page !important;
+            height: 0;
+            margin: 0;
+            border: none;
+            visibility: hidden;
+            display: block;
+        }
+
+        .meeting-badge {
+            display: inline-block;
+            padding: 6pt 14pt;
+            background: #1e1b4b;
+            color: white !important;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 9pt;
+            margin-bottom: 10pt;
+            border-radius: 6px;
+        }
+
+        @media print {
+            html, body {
+                width: 215mm !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .no-print { display: none !important; }
+            #root { width: 100% !important; display: block !important; }
+            main { display: block !important; margin: 0 !important; padding: 0 !important; }
+            section { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            
+            .f4-preview-wrapper { 
+                padding: 0 !important; 
+                background: white !important; 
+                overflow: visible !important; 
+                display: block !important; 
+                border-radius: 0 !important; 
+                box-shadow: none !important;
+                width: 215mm !important;
+            }
+            .f4-page-container { 
+                box-shadow: none !important; 
+                margin: 0 !important; 
+                width: 215mm !important; 
+                display: block !important;
+            }
+            .f4-page { 
+                padding: 10mm !important; 
+                width: 215mm !important; 
+                border: none !important; 
+                margin: 0 !important;
+                box-shadow: none !important;
+            }
+            @page { 
+                size: 215mm 330mm; 
+                margin: 0; 
+            }
+        }
+
+        /* Custom Scrollbar for Form */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-slate-100 text-slate-900 overflow-x-hidden">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+{
+  "name": "RPM - SDN14 LBT2",
+  "description": "Aplikasi khusus guru Sekolah Dasar untuk menghasilkan Rencana Pembelajaran Mendalam (RPM) otomatis dengan struktur F4 yang rapi, lengkap dengan Ringkasan Materi bergambar dan Soal HOTS.",
+  "requestFramePermissions": []
+}
