@@ -132,8 +132,96 @@ const INITIAL_FORM: RPMFormData = {
 
 declare const html2pdf: any;
 
+// --- REUSABLE COMPONENTS ---
+const ClickToEdit = ({ 
+  value, 
+  onSave, 
+  label, 
+  isTextArea = true,
+  className = "",
+  textClassName = ""
+}: { 
+  value: string, 
+  onSave: (val: string) => void, 
+  label: string,
+  isTextArea?: boolean,
+  className?: string,
+  textClassName?: string
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempValue, setTempValue] = useState(value);
+
+  useEffect(() => {
+    setTempValue(value);
+  }, [value]);
+
+  if (isEditing) {
+    return (
+      <div className="p-4 border-2 border-indigo-500 rounded-2xl bg-indigo-50 no-print shadow-xl">
+        <label className="block text-[10px] font-black text-indigo-600 uppercase mb-2 tracking-widest">{label}</label>
+        {isTextArea ? (
+          <textarea 
+            autoFocus
+            className="w-full p-3 text-sm border-2 border-indigo-100 rounded-xl outline-none focus:border-indigo-500 bg-white font-medium"
+            value={tempValue}
+            onChange={(e) => setTempValue(e.target.value)}
+            rows={6}
+          />
+        ) : (
+          <input 
+            autoFocus
+            className="w-full p-3 text-sm border-2 border-indigo-100 rounded-xl outline-none focus:border-indigo-500 bg-white font-medium"
+            value={tempValue}
+            onChange={(e) => setTempValue(e.target.value)}
+          />
+        )}
+        <div className="flex justify-end gap-3 mt-3">
+           <button 
+             onClick={(e) => { e.stopPropagation(); setIsEditing(false); }} 
+             className="px-4 py-2 text-[10px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest"
+           >
+             Batal
+           </button>
+           <button 
+             onClick={(e) => { e.stopPropagation(); onSave(tempValue); setIsEditing(false); }} 
+             className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-indigo-700"
+           >
+             Simpan Perubahan
+           </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      onClick={() => setIsEditing(true)} 
+      className={`cursor-pointer hover:bg-indigo-50/50 hover:ring-2 ring-indigo-200/50 rounded-xl transition-all group relative ${className}`}
+    >
+      <div className="absolute -top-3 -right-2 opacity-0 group-hover:opacity-100 transition-opacity no-print z-10">
+        <div className="bg-indigo-600 text-white text-[7px] px-2 py-1 rounded-lg font-black shadow-lg flex items-center gap-1">
+          <PenTool size={8} /> EDIT
+        </div>
+      </div>
+      <div className={textClassName}>{value}</div>
+    </div>
+  );
+};
+
 // --- REUSABLE RPM DOCUMENT COMPONENT ---
-const RPMDocument = ({ entry, themeIndex, id }: { entry: LibraryEntry, themeIndex?: number, id?: string }) => {
+const RPMDocument = ({ 
+  entry, 
+  themeIndex, 
+  id,
+  onUpdateContent,
+  onUpdateForm
+}: { 
+  entry: LibraryEntry, 
+  themeIndex?: number, 
+  id?: string,
+  onUpdateContent?: (path: string, value: any) => void,
+  onUpdateForm?: (field: keyof RPMFormData, value: any) => void
+}) => {
   const { formData, generatedContent, generatedImageUrl } = entry;
   
   // Use provided themeIndex or derive from subject
@@ -155,26 +243,98 @@ const RPMDocument = ({ entry, themeIndex, id }: { entry: LibraryEntry, themeInde
         <div className="border-[1.5pt] border-black text-center font-bold uppercase p-3 mb-6" style={{ backgroundColor: docTheme.header }}>A. IDENTITAS MODUL</div>
         <table className="table-spreadsheet mb-6">
           <tbody>
-            <tr><td className="col-key">Satuan Pendidikan</td><td className="font-bold uppercase">{formData.schoolName}</td></tr>
-            <tr><td className="col-key">Mata Pelajaran</td><td className="font-bold uppercase" style={{ color: docTheme.text }}>{formData.subject}</td></tr>
+            <tr>
+              <td className="col-key">Satuan Pendidikan</td>
+              <td className="font-bold uppercase">
+                <ClickToEdit 
+                  value={formData.schoolName} 
+                  onSave={(v) => onUpdateForm?.('schoolName', v)} 
+                  label="Satuan Pendidikan"
+                  isTextArea={false}
+                />
+              </td>
+            </tr>
+            <tr>
+              <td className="col-key">Mata Pelajaran</td>
+              <td className="font-bold uppercase" style={{ color: docTheme.text }}>{formData.subject}</td>
+            </tr>
             {formData.chapter && (
-              <tr><td className="col-key">Bab / Unit</td><td className="font-bold uppercase">{formData.chapter} {formData.chapterTitle ? `: ${formData.chapterTitle}` : ''}</td></tr>
+              <tr>
+                <td className="col-key">Bab / Unit</td>
+                <td className="font-bold uppercase">
+                  <ClickToEdit 
+                    value={formData.chapter} 
+                    onSave={(v) => onUpdateForm?.('chapter', v)} 
+                    label="Bab / Unit"
+                    isTextArea={false}
+                    className="inline-block"
+                  />
+                  {formData.chapterTitle ? `: ${formData.chapterTitle}` : ''}
+                </td>
+              </tr>
             )}
             <tr><td className="col-key">Kelas / Fase</td><td className="font-bold">{formData.grade} / Fase {formData.grade.includes('1') || formData.grade.includes('2') ? 'A' : formData.grade.includes('3') || formData.grade.includes('4') ? 'B' : 'C'}</td></tr>
-            <tr><td className="col-key">Alokasi Waktu</td><td className="font-bold">{formData.meetingCount} Pertemuan ({formData.duration})</td></tr>
+            <tr>
+              <td className="col-key">Alokasi Waktu</td>
+              <td className="font-bold">
+                <ClickToEdit 
+                  value={formData.duration} 
+                  onSave={(v) => onUpdateForm?.('duration', v)} 
+                  label="Alokasi Waktu"
+                  isTextArea={false}
+                />
+              </td>
+            </tr>
           </tbody>
         </table>
 
         <div className="border-[1.5pt] border-black text-center font-bold uppercase p-3 mb-6" style={{ backgroundColor: docTheme.header }}>B. IDENTITAS MURID</div>
         <table className="table-spreadsheet mb-6">
           <tbody>
+            {/* Profil Murid */}
             {typeof generatedContent.students === 'string' ? (
-              <tr><td className="col-key">Profil Murid</td><td className="text-justify leading-none">{generatedContent.students}</td></tr>
+              <tr>
+                <td className="col-key">Profil Murid</td>
+                <td className="text-justify leading-none">
+                  <ClickToEdit 
+                    value={generatedContent.students} 
+                    onSave={(v) => onUpdateContent?.('students', v)} 
+                    label="Profil Murid"
+                  />
+                </td>
+              </tr>
             ) : (
               <>
-                <tr><td className="col-key">Pengetahuan Awal</td><td className="text-justify leading-none">{generatedContent.students.priorKnowledge}</td></tr>
-                <tr><td className="col-key">Minat Belajar</td><td className="text-justify leading-none">{generatedContent.students.interests}</td></tr>
-                <tr><td className="col-key">Kebutuhan Belajar</td><td className="text-justify leading-none">{generatedContent.students.needs}</td></tr>
+                <tr>
+                  <td className="col-key">Pengetahuan Awal</td>
+                  <td className="text-justify leading-none">
+                    <ClickToEdit 
+                      value={generatedContent.students.priorKnowledge} 
+                      onSave={(v) => onUpdateContent?.('students.priorKnowledge', v)} 
+                      label="Pengetahuan Awal"
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td className="col-key">Minat Belajar</td>
+                  <td className="text-justify leading-none">
+                    <ClickToEdit 
+                      value={generatedContent.students.interests} 
+                      onSave={(v) => onUpdateContent?.('students.interests', v)} 
+                      label="Minat Belajar"
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td className="col-key">Kebutuhan Belajar</td>
+                  <td className="text-justify leading-none">
+                    <ClickToEdit 
+                      value={generatedContent.students.needs} 
+                      onSave={(v) => onUpdateContent?.('students.needs', v)} 
+                      label="Kebutuhan Belajar"
+                    />
+                  </td>
+                </tr>
               </>
             )}
           </tbody>
@@ -183,7 +343,17 @@ const RPMDocument = ({ entry, themeIndex, id }: { entry: LibraryEntry, themeInde
         <div className="border-[1.5pt] border-black text-center font-bold uppercase p-3 mb-6" style={{ backgroundColor: docTheme.header }}>C. MATERI PELAJARAN</div>
         <table className="table-spreadsheet mb-6">
           <tbody>
-            <tr><td className="col-key">Materi Pokok</td><td className="font-bold uppercase" style={{ color: docTheme.text }}>{formData.material}</td></tr>
+            <tr>
+              <td className="col-key">Materi Pokok</td>
+              <td className="font-bold uppercase" style={{ color: docTheme.text }}>
+                <ClickToEdit 
+                  value={formData.material} 
+                  onSave={(v) => onUpdateForm?.('material', v)} 
+                  label="Materi Pokok"
+                  isTextArea={false}
+                />
+              </td>
+            </tr>
             {generatedImageUrl && (
               <tr>
                 <td className="col-key">Visualisasi</td>
@@ -207,9 +377,12 @@ const RPMDocument = ({ entry, themeIndex, id }: { entry: LibraryEntry, themeInde
             <tr>
               <td className="col-key">Ringkasan Materi</td>
               <td className="p-6 text-justify leading-none">
-                <div className="markdown-body">
-                  <Markdown>{generatedContent.summary}</Markdown>
-                </div>
+                <ClickToEdit 
+                  value={generatedContent.summary} 
+                  onSave={(v) => onUpdateContent?.('summary', v)} 
+                  label="Ringkasan Materi"
+                  textClassName="markdown-body"
+                />
               </td>
             </tr>
           </tbody>
@@ -222,13 +395,29 @@ const RPMDocument = ({ entry, themeIndex, id }: { entry: LibraryEntry, themeInde
               generatedContent.dimensions.map((dim, dIdx) => (
                 <tr key={dIdx}>
                   <td className="col-key">{dim.dimension}</td>
-                  <td className="text-sm leading-tight italic">{dim.elements}</td>
+                  <td className="text-sm leading-tight italic">
+                    <ClickToEdit 
+                      value={dim.elements} 
+                      onSave={(v) => {
+                        const newDims = [...(generatedContent.dimensions as any)];
+                        newDims[dIdx].elements = v;
+                        onUpdateContent?.('dimensions', newDims);
+                      }} 
+                      label={`Elemen ${dim.dimension}`}
+                    />
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
                 <td className="col-key">Dimensi P5</td>
-                <td className="font-bold">{generatedContent.dimensions}</td>
+                <td className="font-bold">
+                  <ClickToEdit 
+                    value={generatedContent.dimensions} 
+                    onSave={(v) => onUpdateContent?.('dimensions', v)} 
+                    label="Dimensi P5"
+                  />
+                </td>
               </tr>
             )}
           </tbody>
@@ -240,11 +429,57 @@ const RPMDocument = ({ entry, themeIndex, id }: { entry: LibraryEntry, themeInde
         <div className="border-[1.5pt] border-black text-center font-bold uppercase p-3 mb-6" style={{ backgroundColor: docTheme.header }}>E. DESAIN PEMBELAJARAN</div>
         <table className="table-spreadsheet">
           <tbody>
-            <tr><td className="col-key">Capaian Pembelajaran</td><td className="text-justify leading-none">{formData.cp}</td></tr>
-            <tr><td className="col-key">Tujuan Pembelajaran</td><td className="text-justify leading-none font-bold">{formData.tp}</td></tr>
-            <tr><td className="col-key">Praktik Pedagogis</td><td className="font-bold italic" style={{ color: docTheme.accent }}>{generatedContent.pedagogy}</td></tr>
-            <tr><td className="col-key">Lintas Disiplin Ilmu</td><td className="text-justify leading-none">{generatedContent.interdisciplinary}</td></tr>
-            <tr><td className="col-key">Pemanfaatan Digital</td><td className="text-justify leading-none">{generatedContent.digitalTools}</td></tr>
+            <tr>
+              <td className="col-key">Capaian Pembelajaran</td>
+              <td className="text-justify leading-none">
+                <ClickToEdit 
+                  value={formData.cp} 
+                  onSave={(v) => onUpdateForm?.('cp', v)} 
+                  label="Capaian Pembelajaran"
+                />
+              </td>
+            </tr>
+            <tr>
+              <td className="col-key">Tujuan Pembelajaran</td>
+              <td className="text-justify leading-none font-bold">
+                <ClickToEdit 
+                  value={formData.tp} 
+                  onSave={(v) => onUpdateForm?.('tp', v)} 
+                  label="Tujuan Pembelajaran"
+                />
+              </td>
+            </tr>
+            <tr>
+              <td className="col-key">Praktik Pedagogis</td>
+              <td className="font-bold italic" style={{ color: docTheme.accent }}>
+                <ClickToEdit 
+                  value={generatedContent.pedagogy} 
+                  onSave={(v) => onUpdateContent?.('pedagogy', v)} 
+                  label="Praktik Pedagogis"
+                  isTextArea={false}
+                />
+              </td>
+            </tr>
+            <tr>
+              <td className="col-key">Lintas Disiplin Ilmu</td>
+              <td className="text-justify leading-none">
+                <ClickToEdit 
+                  value={generatedContent.interdisciplinary} 
+                  onSave={(v) => onUpdateContent?.('interdisciplinary', v)} 
+                  label="Lintas Disiplin Ilmu"
+                />
+              </td>
+            </tr>
+            <tr>
+              <td className="col-key">Pemanfaatan Digital</td>
+              <td className="text-justify leading-none">
+                <ClickToEdit 
+                  value={generatedContent.digitalTools} 
+                  onSave={(v) => onUpdateContent?.('digitalTools', v)} 
+                  label="Pemanfaatan Digital"
+                />
+              </td>
+            </tr>
           </tbody>
         </table>
         
@@ -275,7 +510,11 @@ const RPMDocument = ({ entry, themeIndex, id }: { entry: LibraryEntry, themeInde
                       <div className="font-bold uppercase mb-4 text-center py-3 border-b-2" style={{ backgroundColor: theme.header, color: theme.text, borderColor: theme.accent }}>
                         1. KEGIATAN AWAL ({meeting.opening.duration})
                       </div>
-                      {meeting.opening.steps}
+                      <ClickToEdit 
+                        value={meeting.opening.steps} 
+                        onSave={(v) => onUpdateContent?.(`meetings.${idx}.opening.steps`, v)} 
+                        label="Langkah Kegiatan Awal"
+                      />
                     </td>
                   </tr>
 
@@ -287,15 +526,27 @@ const RPMDocument = ({ entry, themeIndex, id }: { entry: LibraryEntry, themeInde
                       <div className="p-6 space-y-6">
                         <div className="whitespace-pre-line text-justify leading-none">
                           <div className="font-bold italic mb-2 text-indigo-900" style={{ color: theme.accent }}>A. Understand (Memahami)</div>
-                          {meeting.understand.steps}
+                          <ClickToEdit 
+                            value={meeting.understand.steps} 
+                            onSave={(v) => onUpdateContent?.(`meetings.${idx}.understand.steps`, v)} 
+                            label="Langkah Understand"
+                          />
                         </div>
                         <div className="whitespace-pre-line text-justify leading-none border-t border-dashed pt-4" style={{ borderColor: theme.accent + '40' }}>
                           <div className="font-bold italic mb-2 text-indigo-900" style={{ color: theme.accent }}>B. Apply (Menerapkan)</div>
-                          {meeting.apply.steps}
+                          <ClickToEdit 
+                            value={meeting.apply.steps} 
+                            onSave={(v) => onUpdateContent?.(`meetings.${idx}.apply.steps`, v)} 
+                            label="Langkah Apply"
+                          />
                         </div>
                         <div className="whitespace-pre-line text-justify leading-none border-t border-dashed pt-4" style={{ borderColor: theme.accent + '40' }}>
                           <div className="font-bold italic mb-2 text-indigo-900" style={{ color: theme.accent }}>C. Reflect (Refleksi)</div>
-                          {meeting.reflect.steps}
+                          <ClickToEdit 
+                            value={meeting.reflect.steps} 
+                            onSave={(v) => onUpdateContent?.(`meetings.${idx}.reflect.steps`, v)} 
+                            label="Langkah Reflect"
+                          />
                         </div>
                       </div>
                     </td>
@@ -306,7 +557,11 @@ const RPMDocument = ({ entry, themeIndex, id }: { entry: LibraryEntry, themeInde
                       <div className="font-bold uppercase mb-4 text-center py-3 border-b-2" style={{ backgroundColor: theme.header, color: theme.text, borderColor: theme.accent }}>
                         3. KEGIATAN AKHIR ({meeting.closing.duration})
                       </div>
-                      {meeting.closing.steps}
+                      <ClickToEdit 
+                        value={meeting.closing.steps} 
+                        onSave={(v) => onUpdateContent?.(`meetings.${idx}.closing.steps`, v)} 
+                        label="Langkah Kegiatan Akhir"
+                      />
                     </td>
                   </tr>
                 </tbody>
@@ -331,21 +586,81 @@ const RPMDocument = ({ entry, themeIndex, id }: { entry: LibraryEntry, themeInde
           <tbody>
             <tr>
               <td className="font-bold text-center bg-slate-50">Awal (Diagnostik)</td>
-              <td className="text-center">{generatedContent.assessments.initial.technique}</td>
-              <td>{generatedContent.assessments.initial.instrument}</td>
-              <td className="text-justify text-sm leading-none">{generatedContent.assessments.initial.rubric}</td>
+              <td className="text-center">
+                <ClickToEdit 
+                  value={generatedContent.assessments.initial.technique} 
+                  onSave={(v) => onUpdateContent?.('assessments.initial.technique', v)} 
+                  label="Teknik Diagnostik"
+                  isTextArea={false}
+                />
+              </td>
+              <td>
+                <ClickToEdit 
+                  value={generatedContent.assessments.initial.instrument} 
+                  onSave={(v) => onUpdateContent?.('assessments.initial.instrument', v)} 
+                  label="Instrumen Diagnostik"
+                  isTextArea={false}
+                />
+              </td>
+              <td className="text-justify text-sm leading-none">
+                <ClickToEdit 
+                  value={generatedContent.assessments.initial.rubric} 
+                  onSave={(v) => onUpdateContent?.('assessments.initial.rubric', v)} 
+                  label="Rubrik Diagnostik"
+                />
+              </td>
             </tr>
             <tr>
               <td className="font-bold text-center bg-slate-50">Proses (Formatif)</td>
-              <td className="text-center">{generatedContent.assessments.process.technique}</td>
-              <td>{generatedContent.assessments.process.instrument}</td>
-              <td className="text-justify text-sm leading-none">{generatedContent.assessments.process.rubric}</td>
+              <td className="text-center">
+                <ClickToEdit 
+                  value={generatedContent.assessments.process.technique} 
+                  onSave={(v) => onUpdateContent?.('assessments.process.technique', v)} 
+                  label="Teknik Formatif"
+                  isTextArea={false}
+                />
+              </td>
+              <td>
+                <ClickToEdit 
+                  value={generatedContent.assessments.process.instrument} 
+                  onSave={(v) => onUpdateContent?.('assessments.process.instrument', v)} 
+                  label="Instrumen Formatif"
+                  isTextArea={false}
+                />
+              </td>
+              <td className="text-justify text-sm leading-none">
+                <ClickToEdit 
+                  value={generatedContent.assessments.process.rubric} 
+                  onSave={(v) => onUpdateContent?.('assessments.process.rubric', v)} 
+                  label="Rubrik Formatif"
+                />
+              </td>
             </tr>
             <tr>
               <td className="font-bold text-center bg-slate-50">Akhir (Sumatif)</td>
-              <td className="text-center">{generatedContent.assessments.final.technique}</td>
-              <td>{generatedContent.assessments.final.instrument}</td>
-              <td className="text-justify text-sm leading-none">{generatedContent.assessments.final.rubric}</td>
+              <td className="text-center">
+                <ClickToEdit 
+                  value={generatedContent.assessments.final.technique} 
+                  onSave={(v) => onUpdateContent?.('assessments.final.technique', v)} 
+                  label="Teknik Sumatif"
+                  isTextArea={false}
+                />
+              </td>
+              <td>
+                <ClickToEdit 
+                  value={generatedContent.assessments.final.instrument} 
+                  onSave={(v) => onUpdateContent?.('assessments.final.instrument', v)} 
+                  label="Instrumen Sumatif"
+                  isTextArea={false}
+                />
+              </td>
+              <td className="text-justify text-sm leading-none">
+                <ClickToEdit 
+                  value={generatedContent.assessments.final.rubric} 
+                  onSave={(v) => onUpdateContent?.('assessments.final.rubric', v)} 
+                  label="Rubrik Sumatif"
+                />
+              </td>
             </tr>
           </tbody>
         </table>
@@ -355,11 +670,23 @@ const RPMDocument = ({ entry, themeIndex, id }: { entry: LibraryEntry, themeInde
           <tbody>
             <tr>
               <td className="col-key">Pengayaan</td>
-              <td className="p-6 text-justify leading-none">{generatedContent.enrichment}</td>
+              <td className="p-6 text-justify leading-none">
+                <ClickToEdit 
+                  value={generatedContent.enrichment} 
+                  onSave={(v) => onUpdateContent?.('enrichment', v)} 
+                  label="Pengayaan"
+                />
+              </td>
             </tr>
             <tr>
               <td className="col-key">Remedial</td>
-              <td className="p-6 text-justify leading-none">{generatedContent.remedial}</td>
+              <td className="p-6 text-justify leading-none">
+                <ClickToEdit 
+                  value={generatedContent.remedial} 
+                  onSave={(v) => onUpdateContent?.('remedial', v)} 
+                  label="Remedial"
+                />
+              </td>
             </tr>
           </tbody>
         </table>
@@ -375,11 +702,23 @@ const RPMDocument = ({ entry, themeIndex, id }: { entry: LibraryEntry, themeInde
             <tbody>
               <tr>
                 <td className="col-key">Refleksi Pendidik</td>
-                <td className="p-6 text-justify leading-none whitespace-pre-line italic">{generatedContent.reflectionTeacher}</td>
+                <td className="p-6 text-justify leading-none whitespace-pre-line italic">
+                  <ClickToEdit 
+                    value={generatedContent.reflectionTeacher} 
+                    onSave={(v) => onUpdateContent?.('reflectionTeacher', v)} 
+                    label="Refleksi Pendidik"
+                  />
+                </td>
               </tr>
               <tr>
                 <td className="col-key">Refleksi Peserta Didik</td>
-                <td className="p-6 text-justify leading-none whitespace-pre-line italic">{generatedContent.reflectionStudent}</td>
+                <td className="p-6 text-justify leading-none whitespace-pre-line italic">
+                  <ClickToEdit 
+                    value={generatedContent.reflectionStudent} 
+                    onSave={(v) => onUpdateContent?.('reflectionStudent', v)} 
+                    label="Refleksi Peserta Didik"
+                  />
+                </td>
               </tr>
             </tbody>
           </table>
@@ -438,6 +777,29 @@ export default function App() {
   const [selectedLibraryIds, setSelectedLibraryIds] = useState<string[]>([]);
   const [selectedThemeIndex, setSelectedThemeIndex] = useState<number | null>(null);
   const [showQuestionEditor, setShowQuestionEditor] = useState(false);
+
+  const handleUpdateContent = (path: string, value: any) => {
+    setState(prev => {
+      if (!prev.generatedContent) return prev;
+      const newContent = JSON.parse(JSON.stringify(prev.generatedContent));
+      
+      const parts = path.split('.');
+      let current: any = newContent;
+      for (let i = 0; i < parts.length - 1; i++) {
+        current = current[parts[i]];
+      }
+      current[parts[parts.length - 1]] = value;
+      
+      return { ...prev, generatedContent: newContent };
+    });
+  };
+
+  const handleUpdateForm = (field: keyof RPMFormData, value: any) => {
+    setState(prev => ({
+      ...prev,
+      formData: { ...prev.formData, [field]: value }
+    }));
+  };
 
   // Load form data draft
   useEffect(() => {
@@ -1707,6 +2069,8 @@ export default function App() {
                       generatedImageUrl: state.generatedImageUrl
                     }} 
                     themeIndex={selectedThemeIndex !== null ? selectedThemeIndex : undefined}
+                    onUpdateContent={handleUpdateContent}
+                    onUpdateForm={handleUpdateForm}
                   />
                 </div>
               </div>
